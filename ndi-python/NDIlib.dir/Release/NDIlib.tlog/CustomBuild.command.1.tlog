@@ -1,0 +1,10 @@
+^C:\USERS\SCIEN\PROJECTS\VRCHAT CLUB LIGHTING\DMX TO NDI\NDI-PYTHON\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" "-SC:/Users/scien/Projects/VRChat Club Lighting/DMX to NDI/ndi-python" "-BC:/Users/scien/Projects/VRChat Club Lighting/DMX to NDI/ndi-python" --check-stamp-file "C:/Users/scien/Projects/VRChat Club Lighting/DMX to NDI/ndi-python/CMakeFiles/generate.stamp"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

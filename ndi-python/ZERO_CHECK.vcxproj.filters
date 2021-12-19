@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\scien\Projects\VRChat Club Lighting\DMX to NDI\ndi-python\CMakeFiles\a3d04b6b045b5a63cf38f7a42c54768b\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{BF2DEA02-2E80-306F-88B9-C128C1D66CF0}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
