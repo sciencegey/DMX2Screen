@@ -6,20 +6,22 @@ import artnet_middleware as Artnet
 # import NDIlib as ndi
 # import time
 
-#import fixtures file
+#import and load fixtures JSON file
 f = open("fixtures.json", "r")
 fixtures = json.load(f)
 
+# sets the variables for Artnet
 ARTNET_IP = "192.168.1.21"
 ARTNET_PORT = 6454
 ARTNET_UNI = 0
 
+# sets the variables for the output canvas
 canvasHeight = 1080
 canvasWidth = 1920
+# and the parameters for the output grid
 cellSize = 15
-outputRows = 2
-outputColumns = 2
 
+# creates a blank (black) screen to start off with
 screenOutput = np.zeros((canvasHeight,canvasWidth,4), np.uint8)
 
 # send_settings = ndi.SendCreate()
@@ -27,6 +29,7 @@ screenOutput = np.zeros((canvasHeight,canvasWidth,4), np.uint8)
 # ndi_send = ndi.send_create(send_settings)
 # video_frame = ndi.VideoFrameV2()
 
+# shows the output (in this case blank)
 cv.imshow('DMXOutput',cv.resize(screenOutput,(1280,720)))
 
 while cv.getWindowProperty('DMXOutput', 0) >= 0:
