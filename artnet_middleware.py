@@ -8,6 +8,8 @@ import sys
 from socket import (socket, AF_INET, SOCK_DGRAM)
 from struct import pack, unpack
 
+debug = False
+
 class ArtnetPacket:
 
     ARTNET_HEADER = b'Art-Net\x00' # the header for artnet packets
@@ -45,7 +47,7 @@ class ArtnetPacket:
         return packet
     
     # Extracts DMX data from the Artnet packet and puts it into a nice array :)
-    def artnet_packet_to_array(raw_data, debug):
+    def artnet_packet_to_array(raw_data):
         if unpack('!8s', raw_data[:8])[0] != ArtnetPacket.ARTNET_HEADER:
             # The packet doesn't have a valid header, so it's probably not an Artnet packet (or it's broken... :V)
             if debug: print("Received a non Art-Net packet")
