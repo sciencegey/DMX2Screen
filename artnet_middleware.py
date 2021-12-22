@@ -3,7 +3,10 @@
 
 # Library that takes Artnet (DMX) packets and converts them to data that Python can use.
 
-import sys
+import ipaddress
+
+import errno
+from time import sleep
 
 from socket import (socket, AF_INET, SOCK_DGRAM)
 from struct import pack, unpack
@@ -30,21 +33,21 @@ class ArtnetPacket:
             self.op_code, self.ver, self.sequence, self.physical,
             self.universe, self.length, self.data)
 
-    def unpack_raw_artnet_packet(raw_data):
+    # def unpack_raw_artnet_packet(raw_data):
 
-        if unpack('!8s', raw_data[:8])[0] != ArtnetPacket.ARTNET_HEADER:
-            print("Received a non Art-Net packet")
-            return None
+    #     if unpack('!8s', raw_data[:8])[0] != ArtnetPacket.ARTNET_HEADER:
+    #         print("Received a non Art-Net packet")
+    #         return None
 
-        packet = ArtnetPacket()
-        (packet.op_code, packet.ver, packet.sequence, packet.physical,
-            packet.universe, packet.length) = unpack('!HHBBHH', raw_data[8:18])
+    #     packet = ArtnetPacket()
+    #     (packet.op_code, packet.ver, packet.sequence, packet.physical,
+    #         packet.universe, packet.length) = unpack('!HHBBHH', raw_data[8:18])
 
-        packet.data = unpack(
-            '{0}s'.format(int(packet.length)),
-            raw_data[18:18+int(packet.length)])[0]
+    #     packet.data = unpack(
+    #         '{0}s'.format(int(packet.length)),
+    #         raw_data[18:18+int(packet.length)])[0]
 
-        return packet
+    #     return packet
     
     # Extracts DMX data from the Artnet packet and puts it into a nice array :)
     def artnet_packet_to_array(raw_data):
@@ -80,10 +83,20 @@ def readPacket(IP, PORT):
     sock = socket(AF_INET, SOCK_DGRAM)  # UDP
     sock.bind((IP, PORT))
 
-    # then receive 1024 bytes of data (the packet)
-    data, addr = sock.recvfrom(1024)
-    # and decode it using the function.
-    packet = ArtnetPacket.artnet_packet_to_array(data)
+    # and sets the timeout on the socket
+    sock.settimeout(0.1)
+
+    # then try to receive 1024 bytes of data (the packet)
+    try:
+        data, addr = sock.recvfrom(1024)
+    except (ConnectionError, TimeoutError):
+        sleep(1)
+        if debug: print("No data available")
+        packet = None
+    else:
+        # and decode it using the function.
+        packet = ArtnetPacket.artnet_packet_to_array(data)
+    
     # finally close the socket and return the packet to the main program.
     sock.close()
     return(packet)

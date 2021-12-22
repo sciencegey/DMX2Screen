@@ -114,3 +114,7 @@ dmypy.json
 .pyre/
 
 ndi-python/
+
+main.build/
+main.dist/
+main.onefile-build/

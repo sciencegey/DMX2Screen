@@ -14,13 +14,13 @@ configFile = "config.ini"
 fixtureFile = "fixtures.json"
 
 # sets the variables for Artnet
-ARTNET_IP = "192.168.1.21"
+ARTNET_IP = "0.0.0.0"
 ARTNET_PORT = 6454
 ARTNET_UNI = 0
 
 # sets the variables for the output canvas
-canvasHeight = 1080
 canvasWidth = 1920
+canvasHeight = 1080
 # and the parameters for the output grid
 cellSize = 15
 
@@ -32,8 +32,8 @@ if os.path.isfile(configFile):
     fixtureFile = conf.get("General", "FixtureFile", fallback=fixtureFile)
 
     ARTNET_IP = conf.get("Artnet", "IP", fallback=ARTNET_IP)
-    ARTNET_PORT = conf.get("Artnet", "Port", fallback=ARTNET_PORT)
-    ARTNET_UNI = conf.get("Artnet", "Universe", fallback=ARTNET_UNI)
+    ARTNET_PORT = conf.getint("Artnet", "Port", fallback=ARTNET_PORT)
+    ARTNET_UNI = conf.getint("Artnet", "Universe", fallback=ARTNET_UNI)
 
     canvasHeight = conf.getint("Output", "Height", fallback=canvasHeight)
     canvasWidth = conf.getint("Output", "Width", fallback=canvasWidth)
@@ -53,7 +53,9 @@ if os.path.isfile(fixtureFile):
     fixtures = json.load(f)
 else:
     # unless it doesn't exist, then quit the program.
-    sys.exit("Oops! The fixtures file wasn't found! Check the config.ini to make sure the path is defined correctly!")
+    print("Oops! The fixtures file wasn't found! Check the config.ini to make sure the path is defined correctly!")
+    input("Press any key to exit...")
+    sys.exit()
 
 # creates a blank (black) screen to start off with (is a 4 "wide" array; Red, Green, Blue and Alpha (required for NDI))
 screenOutput = np.zeros((canvasHeight,canvasWidth,4), np.uint8)
@@ -66,7 +68,7 @@ screenOutput = np.zeros((canvasHeight,canvasWidth,4), np.uint8)
 # shows the output (in this case blank)
 cv.imshow('DMXOutput', screenOutput)
 
-while cv.getWindowProperty('DMXOutput', 0) >= 0:
+while cv.getWindowProperty('DMXOutput', cv.WND_PROP_VISIBLE) > 0:
     # runs infinitaly while the opencv window is open (until it either gets closed or crashes or ctrl-c'd)
     try:
         # Grabs the Artnet packet then checks to see if something is in it (otherwise, don't do anything and keep showing the last screen)
