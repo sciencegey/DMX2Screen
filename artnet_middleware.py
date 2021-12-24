@@ -89,9 +89,9 @@ def readPacket(IP, PORT):
     # then try to receive 1024 bytes of data (the packet)
     try:
         data, addr = sock.recvfrom(1024)
-    except (ConnectionError, TimeoutError):
-        sleep(1)
-        if debug: print("No data available")
+    except Exception as e:
+        sleep(0.5)
+        print(e)
         packet = None
     else:
         # and decode it using the function.

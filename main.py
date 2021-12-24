@@ -13,6 +13,13 @@ debug = False
 configFile = "config.ini"
 fixtureFile = "fixtures.json"
 
+if "--config" in sys.argv:
+    i = sys.argv.index("--config") + 1
+    configFile = sys.argv[i]
+elif "-C" in sys.argv:
+    i = sys.argv.index("-C") + 1
+    configFile = sys.argv[i]
+
 # sets the variables for Artnet
 ARTNET_IP = "0.0.0.0"
 ARTNET_PORT = 6454
@@ -67,6 +74,7 @@ screenOutput = np.zeros((canvasHeight,canvasWidth,4), np.uint8)
 
 # shows the output (in this case blank)
 cv.imshow('DMXOutput', screenOutput)
+cv.waitKey(1)
 
 while cv.getWindowProperty('DMXOutput', cv.WND_PROP_VISIBLE) > 0:
     # runs infinitaly while the opencv window is open (until it either gets closed or crashes or ctrl-c'd)
@@ -111,25 +119,25 @@ while cv.getWindowProperty('DMXOutput', cv.WND_PROP_VISIBLE) > 0:
                 #     # pixel to whatever the data is (DMX is 0-255, directly translated into R G or B which is also 0-255). Also sets the Alpha to 255 (fully opaque).
                 #     screenOutput[yStart:yStart+yWidth, xStart:xStart+xWidth] = dmx[channels[2]-1], dmx[channels[1]-1], dmx[channels[0]-1], 255
 
-            # Outputs the screenOutput array to the screen (...output :))
-            cv.imshow('DMXOutput', screenOutput)
-            # Then waits a single millisecond
-            cv.waitKey(1)
+        # Outputs the screenOutput array to the screen (...output :))
+        cv.imshow('DMXOutput', screenOutput)
+        # Then waits a single millisecond
+        cv.waitKey(1)
 
-            # screenOutput = cv.cvtColor(screenOutput, cv.COLOR_BGR2RGBA)
-            # video_frame.data = screenOutput
-            # video_frame.FourCC = ndi.FOURCC_VIDEO_TYPE_RGBX
+        # screenOutput = cv.cvtColor(screenOutput, cv.COLOR_BGR2RGBA)
+        # video_frame.data = screenOutput
+        # video_frame.FourCC = ndi.FOURCC_VIDEO_TYPE_RGBX
 
-            # ndi.send_send_video_v2(ndi_send, video_frame)
+        # ndi.send_send_video_v2(ndi_send, video_frame)
 
-            # start = time.time()
-            # while time.time() - start < 60 * 5:
-            #     start_send = time.time()
+        # start = time.time()
+        # while time.time() - start < 60 * 5:
+        #     start_send = time.time()
 
-            #     for _ in reversed(range(200)):
-            #         ndi.send_send_video_v2(ndi_send, video_frame)
+        #     for _ in reversed(range(200)):
+        #         ndi.send_send_video_v2(ndi_send, video_frame)
 
-            #     print('200 frames sent, at %1.2ffps' % (200.0 / (time.time() - start_send)))
+        #     print('200 frames sent, at %1.2ffps' % (200.0 / (time.time() - start_send)))
         
     except KeyboardInterrupt:
         # Break out of the while loop if the KeyboardInterrupt is received
