@@ -14,6 +14,8 @@ Simply define your "lighting fixtures" in the fixtures.json file (filename and p
 
 The config.ini file is used to configure the program. And example is included that has all the options avalible. If the setting isn't set, or the file isn't present, it will just use the built-in defaults :)
 
+You can also use the parameters -C or --config to specify a config location.
+
 ## OK, so what do I use it for?
 Great question! I don't really know, if you figure that out let me know ;)
 
