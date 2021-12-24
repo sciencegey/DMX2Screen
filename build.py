@@ -5,12 +5,9 @@
 import sys
 from cx_Freeze import setup, Executable
 
-# Load 
-build_exe_options = {"includes": ["numpy","cv2"], "include_files":["config.ini","fixtures.json"]}
+build_exe_options = {"includes": ["numpy","cv2"], "include_files":["config.ini","fixtures.json"], "build_exe": "build\\DMX2Screen"}
 
 base = None
-
-
 
 setup(name = "DMX2Screen",
     version = "0.1.0",
