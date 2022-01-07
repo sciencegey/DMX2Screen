@@ -1,3 +1,30 @@
+#   _____    __  __  __   __  ___     _____                                     
+#  |  __ \  |  \/  | \ \ / / |__ \   / ____|                                    
+#  | |  | | | \  / |  \ V /     ) | | (___     ___   _ __    ___    ___   _ __  
+#  | |  | | | |\/| |   > <     / /   \___ \   / __| | '__|  / _ \  / _ \ | '_ \ 
+#  | |__| | | |  | |  / . \   / /_   ____) | | (__  | |    |  __/ |  __/ | | | |
+#  |_____/  |_|  |_| /_/ \_\ |____| |_____/   \___| |_|     \___|  \___| |_| |_|
+# 
+# V0.2.0
+# 
+# Yo! This is a simple Python program that takes DMX data over Artnet and displays it as coloured squares.
+
+# ~~~~How do I use it?~~~~
+# Simply define your "lighting fixtures" in the fixtures.json file (filename and path can be set in the config file). The included 
+# files gives you an example of how to setup both "sectors" (fixed-size blocks that make it quick and easy to position them) and "blocks" (blocks that can be any size).
+# 
+# The config.ini file is used to configure the program. An example is included that has all the options avalible. If the setting isn't set, or 
+# the file isn't present, it will just use the built-in defaults :)
+# 
+# You can also use the parameters -C or --config to specify a config location and the parameters -F or --fixture to to specify a fixture file.
+# 
+# Requires Visual C++ 2015 redistributable (https://docs.microsoft.com/en-US/cpp/windows/latest-supported-vc-redist) and 
+# the Windows Media Feature Pack (for N and KN versions) (https://support.microsoft.com/en-us/topic/media-feature-pack-list-for-windows-n-editions-c1c6fffa-d052-8338-7a79-a4bb980a700a)
+# 
+# Once that's all done, just run main.py and watch it go :D
+# 
+# For more information, check out the Github repository at https://github.com/sciencegey/DMX2Screen
+
 import sys
 import json
 import numpy as np
@@ -11,8 +38,9 @@ import os.path
 debug = False
 
 configFile = "config.ini"
-fixtureFile = "fixtures.json"
+fixtureFile = "fixtures/template.json"
 
+# Checks to see if a config file has been specified as a command-line argument
 if "--config" in sys.argv:
     i = sys.argv.index("--config") + 1
     configFile = sys.argv[i]
@@ -26,8 +54,8 @@ ARTNET_PORT = 6454
 ARTNET_UNI = 0
 
 # sets the variables for the output canvas
-canvasWidth = 1920
-canvasHeight = 1080
+canvasWidth = 1280
+canvasHeight = 720
 # and the parameters for the output grid
 cellSize = 15
 
@@ -53,6 +81,17 @@ else:
 # Sets debug in Artnet module. I know it's janky; it works so I don't care ;) 
 # (unless YOU know a better way, then please tell me or fix it :])
 Artnet.debug = debug
+
+# Creates Artnet socket on the selected IP and Port
+a = Artnet.Artnet(ARTNET_IP,ARTNET_PORT)
+
+# Checks to see if a fixtures file has been specified as a command-line argument
+if "--fixture" in sys.argv:
+    i = sys.argv.index("--fixture") + 1
+    fixtureFile = sys.argv[i]
+elif "-F" in sys.argv:
+    i = sys.argv.index("-F") + 1
+    fixtureFile = sys.argv[i]
 
 #import and load fixtures JSON file
 if os.path.isfile(fixtureFile):
@@ -80,7 +119,7 @@ while cv.getWindowProperty('DMXOutput', cv.WND_PROP_VISIBLE) > 0:
     # runs infinitaly while the opencv window is open (until it either gets closed or crashes or ctrl-c'd)
     try:
         # Grabs the Artnet packet then checks to see if something is in it (otherwise, don't do anything and keep showing the last screen)
-        artNetPacket = Artnet.readPacket(ARTNET_IP,ARTNET_PORT)
+        artNetPacket = a.readPacket()
         if artNetPacket is not None:
             # Checks to see if the current packet is for the specified DMX Universe
             if artNetPacket.universe == ARTNET_UNI:
@@ -121,8 +160,8 @@ while cv.getWindowProperty('DMXOutput', cv.WND_PROP_VISIBLE) > 0:
 
         # Outputs the screenOutput array to the screen (...output :))
         cv.imshow('DMXOutput', screenOutput)
-        # Then waits a single millisecond
-        cv.waitKey(1)
+        # Then waits a few milliseconds
+        cv.waitKey(16)
 
         # screenOutput = cv.cvtColor(screenOutput, cv.COLOR_BGR2RGBA)
         # video_frame.data = screenOutput
@@ -145,6 +184,8 @@ while cv.getWindowProperty('DMXOutput', cv.WND_PROP_VISIBLE) > 0:
 
 # Cleanup bit at the end :)
 # 
+# Close the Artnet socket
+a.close()
 # Get rid of the opencv window objects
 cv.destroyAllWindows()
 # Close the JSON file

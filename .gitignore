@@ -118,3 +118,4 @@ ndi-python/
 main.build/
 main.dist/
 main.onefile-build/
+fixtures/generate.py
