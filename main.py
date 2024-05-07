@@ -5,7 +5,7 @@
 #  | |__| | | |  | |  / . \   / /_   ____) | | (__  | |    |  __/ |  __/ | | | |
 #  |_____/  |_|  |_| /_/ \_\ |____| |_____/   \___| |_|     \___|  \___| |_| |_|
 # 
-# V0.2.0
+# V0.3.0
 # 
 # Yo! This is a simple Python program that takes DMX data over Artnet and displays it as coloured squares.
 
@@ -28,12 +28,11 @@
 import sys
 import json
 import numpy as np
-import cv2 as cv
-import artnet_middleware as Artnet
 import configparser
 import os.path
-# import NDIlib as ndi
-# import time
+import python_artnet as Artnet
+
+import cv2 as cv
 
 debug = False
 
@@ -57,11 +56,12 @@ ARTNET_UNI = 0
 canvasWidth = 1280
 canvasHeight = 720
 # and the parameters for the output grid
-cellSize = 15
+cellSize = 8
+displayType = "sector"
 
 # loads settings from the config file and overwrites the presets (if they're present)
 if os.path.isfile(configFile):
-    conf = configparser.ConfigParser()
+    conf = configparser.ConfigParser(inline_comment_prefixes=";")
     conf.read(configFile)
     debug = conf.getboolean("General", "Debug", fallback=debug)
     fixtureFile = conf.get("General", "FixtureFile", fallback=fixtureFile)
@@ -73,14 +73,11 @@ if os.path.isfile(configFile):
     canvasHeight = conf.getint("Output", "Height", fallback=canvasHeight)
     canvasWidth = conf.getint("Output", "Width", fallback=canvasWidth)
     cellSize = conf.getint("Output", "CellSize", fallback=cellSize)
+    displayType = conf.get("Output", "DisplayType", fallback=displayType)
 
 
 else:
     print("No config.ini file found! Using defaults...")
-
-# Sets debug in Artnet module. I know it's janky; it works so I don't care ;) 
-# (unless YOU know a better way, then please tell me or fix it :])
-Artnet.debug = debug
 
 # Creates Artnet socket on the selected IP and Port
 a = Artnet.Artnet(ARTNET_IP,ARTNET_PORT)
@@ -103,80 +100,150 @@ else:
     input("Press any key to exit...")
     sys.exit()
 
+# get the grid type from the fixtures file
+gridType = list(fixtures.keys())
+
 # creates a blank (black) screen to start off with (is a 4 "wide" array; Red, Green, Blue and Alpha (required for NDI))
 screenOutput = np.zeros((canvasHeight,canvasWidth,4), np.uint8)
 
-# send_settings = ndi.SendCreate()
-# send_settings.ndi_name = 'ndi-python'
-# ndi_send = ndi.send_create(send_settings)
-# video_frame = ndi.VideoFrameV2()
+# creates the window for the output
+cv.namedWindow('DMXOutput', cv.WINDOW_NORMAL | cv.WINDOW_KEEPRATIO)
+
+if displayType.lower() == "ndi":
+    import NDIlib as ndi
+
+    send_settings = ndi.SendCreate()
+    send_settings.ndi_name = 'DMX2Screen'
+    ndi_send = ndi.send_create(send_settings)
+    video_frame = ndi.VideoFrameV2()
+
+    windowWidth = 640
+    windowHeight = 360
+
+elif displayType.lower() == "opencv":
+    windowWidth = canvasWidth
+    windowHeight = canvasHeight
+
+else:
+    # unless it doesn't exist, then quit the program.
+    print("Oops! No output specified! Check the config.ini to make sure the output type is defined correctly!")
+    input("Press any key to exit...")
+    sys.exit()
 
 # shows the output (in this case blank)
 cv.imshow('DMXOutput', screenOutput)
+cv.resizeWindow('DMXOutput', windowWidth, windowHeight)
 cv.waitKey(1)
 
 while cv.getWindowProperty('DMXOutput', cv.WND_PROP_VISIBLE) > 0:
     # runs infinitaly while the opencv window is open (until it either gets closed or crashes or ctrl-c'd)
     try:
-        # Grabs the Artnet packet then checks to see if something is in it (otherwise, don't do anything and keep showing the last screen)
-        artNetPacket = a.readPacket()
-        if artNetPacket is not None:
-            # Checks to see if the current packet is for the specified DMX Universe
-            if artNetPacket.universe == ARTNET_UNI:
-                # Stores the packet data array
-                dmx = artNetPacket.data
-                
+        # First get the latest Art-Net data 
+        artNetBuffer = a.readBuffer()
+        # And make sure we actually got something
+        if artNetBuffer is not None:
+            # For each grid type
+            for g in range(len(gridType)):
                 # For each fixture in the sectors section
-                for i in range(len(fixtures["sectors"])):
-                    # Gets the sector x and y "position" and converts it to the real x and y position (times by cellSize)
-                    x = cellSize*(fixtures["sectors"][i]["x"])
-                    y = cellSize*(fixtures["sectors"][i]["y"])
-                    # And gets the DMX channels for that sector
-                    channels = fixtures["sectors"][i]["dmxChannels"]
+                if gridType[g].lower() == "sectors":
+                    for i in range(len(fixtures["sectors"])):
+                        # Gets the sector x and y "position" and converts it to the real x and y position (times by cellSize)
+                        x = cellSize*(fixtures["sectors"][i]["x"])
+                        y = cellSize*(fixtures["sectors"][i]["y"])
 
-                    # Then takes all that data and puts it out to the screen :)
-                    # Each sector starts at y (defined above) and goes to y plus cell size. Same with x. Basically created one large pixel of a fixed size.
-                    # 
-                    # Then gets the DMX data from each channel defined in the fixtures file, gets it from the Artnet array, then sets each colour of the 
-                    # pixel to whatever the data is (DMX is 0-255, directly translated into R G or B which is also 0-255). Also sets the Alpha to 255 (fully opaque).
-                    screenOutput[y:y+cellSize, x:x+cellSize] = dmx[channels[2]-1], dmx[channels[1]-1], dmx[channels[0]-1], 255
+                        # And gets the DMX channels for that sector
+                        channels = fixtures["sectors"][i]["dmxChannels"]
+
+                        # If a universe is defined, use that, otherwise use the default
+                        if "universe" in fixtures["sectors"][i]:
+                            universe = fixtures["sectors"][i]["universe"]
+                        else:
+                            universe = ARTNET_UNI
+
+                        # Make sure the packet has some data
+                        if artNetBuffer[universe].data is not None:
+                            # Stores the packet data array
+                            dmx = artNetBuffer[universe].data
+
+                            # Then takes all that data and puts it out to the screen :)
+                            # Each sector starts at y (defined above) and goes to y plus cell size. Same with x. Basically created one large pixel of a fixed size.
+                            # 
+                            # Then gets the DMX data from each channel defined in the fixtures file, gets it from the Artnet array, then sets each colour of the 
+                            # pixel to whatever the data is (DMX is 0-255, directly translated into R G or B which is also 0-255). Also sets the Alpha to 255 (fully opaque).
+                            screenOutput[y:y+cellSize, x:x+cellSize] = dmx[channels[2]-1], dmx[channels[1]-1], dmx[channels[0]-1], 255
                 
-                # # For each fixture in the blocks section
-                # for i in range(len(fixtures["blocks"])):
-                #     # Defines the start pixel of x and y and the end pixels of x and y.
-                #     xStart = fixtures["blocks"][i]["xStart"]
-                #     yStart = fixtures["blocks"][i]["yStart"]
-                #     xWidth = fixtures["blocks"][i]["xWidth"]
-                #     yWidth = fixtures["blocks"][i]["yWidth"]
-                #     # And the DMX channels for each block
-                #     channels = fixtures["blocks"][i]["dmxChannels"]
-                #
-                #     # Then takes all that data and puts it out to the screen :)
-                #     # Each sector starts at yStart (defined above) and goes to yStart plus yWidth. Same with x. Basically created one large pixel of a custom size.
-                #     # 
-                #     # Then gets the DMX data from each channel defined in the fixtures file, gets it from the Artnet array, then sets each colour of the 
-                #     # pixel to whatever the data is (DMX is 0-255, directly translated into R G or B which is also 0-255). Also sets the Alpha to 255 (fully opaque).
-                #     screenOutput[yStart:yStart+yWidth, xStart:xStart+xWidth] = dmx[channels[2]-1], dmx[channels[1]-1], dmx[channels[0]-1], 255
+                # For each fixture in the absolute section
+                elif gridType[g].lower() == "absolute":
+                    for i in range(len(fixtures["absolute"])):
+                        # Gets the sector x and y "position" and converts it to the real x and y position (times by cellSize)
+                        x = fixtures["absolute"][i]["x"]
+                        y = fixtures["absolute"][i]["y"]
+
+                        # And gets the DMX channels for that sector
+                        channels = fixtures["absolute"][i]["dmxChannels"]
+
+                        # If a universe is defined, use that, otherwise use the default
+                        if "universe" in fixtures["absolute"][i]:
+                            universe = fixtures["absolute"][i]["universe"]
+                        else:
+                            universe = ARTNET_UNI
+
+                        # Make sure the packet has some data
+                        if artNetBuffer[universe].data is not None:
+                            # Stores the packet data array
+                            dmx = artNetBuffer[universe].data
+
+                            # Then takes all that data and puts it out to the screen :)
+                            # Each sector starts at y (defined above) and goes to y plus cell size. Same with x. Basically created one large pixel of a fixed size.
+                            # But this time, the x and y are absolute, so they can be anywhere on the screen
+                            # 
+                            # Then gets the DMX data from each channel defined in the fixtures file, gets it from the Artnet array, then sets each colour of the 
+                            # pixel to whatever the data is (DMX is 0-255, directly translated into R G or B which is also 0-255). Also sets the Alpha to 255 (fully opaque).
+                            screenOutput[y:y+cellSize, x:x+cellSize] = dmx[channels[2]-1], dmx[channels[1]-1], dmx[channels[0]-1], 255
+                
+                # For each fixture in the blocks section
+                elif gridType[g].lower() == "blocks":
+                    for i in range(len(fixtures["blocks"])):
+                        # Defines the start pixel of x and y and the end pixels of x and y.
+                        xStart = fixtures["blocks"][i]["xStart"]
+                        yStart = fixtures["blocks"][i]["yStart"]
+                        xWidth = fixtures["blocks"][i]["xWidth"]
+                        yWidth = fixtures["blocks"][i]["yWidth"]
+                        
+                        # And the DMX channels for each block
+                        channels = fixtures["blocks"][i]["dmxChannels"]
+
+                        # If a universe is defined, use that, otherwise use the default
+                        if "universe" in fixtures["blocks"][i]:
+                            universe = fixtures["blocks"][i]["universe"]
+                        else:
+                            universe = ARTNET_UNI
+
+                        # Make sure the packet has some data
+                        if artNetBuffer[universe].data is not None:
+                            # Stores the packet data array
+                            dmx = artNetBuffer[universe].data
+                    
+                            # Then takes all that data and puts it out to the screen :)
+                            # Each sector starts at yStart (defined above) and goes to yStart plus yWidth. Same with x. Basically created one large pixel of a custom size.
+                            # 
+                            # Then gets the DMX data from each channel defined in the fixtures file, gets it from the Artnet array, then sets each colour of the 
+                            # pixel to whatever the data is (DMX is 0-255, directly translated into R G or B which is also 0-255). Also sets the Alpha to 255 (fully opaque).
+                            screenOutput[yStart:yStart+yWidth, xStart:xStart+xWidth] = dmx[channels[2]-1], dmx[channels[1]-1], dmx[channels[0]-1], 255
 
         # Outputs the screenOutput array to the screen (...output :))
         cv.imshow('DMXOutput', screenOutput)
+        # cv.resizeWindow('DMXOutput', windowWidth, windowHeight) if displayType.lower() == "opencv" else None
+
+        if displayType.lower() == "ndi":
+            ndiOutput = cv.cvtColor(screenOutput, cv.COLOR_BGR2RGBA)
+            video_frame.data = ndiOutput
+            video_frame.FourCC = ndi.FOURCC_VIDEO_TYPE_RGBX
+
+            ndi.send_send_video_v2(ndi_send, video_frame)
+        
         # Then waits a few milliseconds
         cv.waitKey(16)
-
-        # screenOutput = cv.cvtColor(screenOutput, cv.COLOR_BGR2RGBA)
-        # video_frame.data = screenOutput
-        # video_frame.FourCC = ndi.FOURCC_VIDEO_TYPE_RGBX
-
-        # ndi.send_send_video_v2(ndi_send, video_frame)
-
-        # start = time.time()
-        # while time.time() - start < 60 * 5:
-        #     start_send = time.time()
-
-        #     for _ in reversed(range(200)):
-        #         ndi.send_send_video_v2(ndi_send, video_frame)
-
-        #     print('200 frames sent, at %1.2ffps' % (200.0 / (time.time() - start_send)))
         
     except KeyboardInterrupt:
         # Break out of the while loop if the KeyboardInterrupt is received
@@ -191,8 +258,9 @@ cv.destroyAllWindows()
 # Close the JSON file
 f.close()
 # And destroy the NDI object
-# ndi.send_destroy(ndi_send)
-# ndi.destroy()
+if displayType.lower() == "ndi":
+    ndi.send_destroy(ndi_send)
+    ndi.destroy()
 
 # Goodbye forever o/
 sys.exit()

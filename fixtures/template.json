@@ -35,7 +35,7 @@
             "yStart" : 100,
             "xWidth" : 30,
             "yWidth" : 30,
-            "dmxChannels" : [0,0,0]
+            "dmxChannels" : [19,20,21]
         }
     ]
 }

@@ -7,7 +7,7 @@ Simple Python program that takes DMX data over Artnet and displays it as coloure
 
 
 ## What do I need?
-Was build on Python 3.10, but it probably works on other versions. Other than the built-in libraries (and the included Artnet decoder library), it needs [OpenCV2](https://pypi.org/project/opencv-python/) (and Numpy along with it).
+Was build on Python 3.12, but it probably works on other versions. Other than the built-in libraries (and the included Artnet decoder library), it needs [OpenCV2](https://pypi.org/project/opencv-python/) (and Numpy along with it).
 
 ## How do I use it?
 Simply define your "lighting fixtures" in the fixtures.json file (filename and path can be set in the config file). The included file gives you an example of how to setup both **"sectors"** (fixed-size blocks that make it quick and easy to position them) and **"blocks"** (blocks that can be any size).

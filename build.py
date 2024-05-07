@@ -1,4 +1,4 @@
-# This build file is designed to be used with cx_freeze (version 6.9 as of writing).
+# This build file is designed to be used with cx_freeze (version 6.12 as of writing).
 # Install cx_freeze https://cx-freeze.readthedocs.io/en/latest/overview.html then simply run:
 # "python build.py build"
 
