@@ -118,5 +118,7 @@ ndi-python/
 main.build/
 main.dist/
 main.onefile-build/
-dmx2screen/
+venv/
 .vscode/
+
+*.pstats

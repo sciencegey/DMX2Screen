@@ -30,7 +30,7 @@ import json
 import numpy as np
 import configparser
 import os.path
-import python_artnet as Artnet
+from python_artnet import python_artnet as Artnet
 
 import cv2 as cv
 
@@ -79,8 +79,11 @@ if os.path.isfile(configFile):
 else:
     print("No config.ini file found! Using defaults...")
 
+if debug:
+    print(Artnet.version())
+
 # Creates Artnet socket on the selected IP and Port
-a = Artnet.Artnet(ARTNET_IP,ARTNET_PORT)
+a = Artnet.Artnet(ARTNET_IP,ARTNET_PORT,DEBUG=debug)
 
 # Checks to see if a fixtures file has been specified as a command-line argument
 if "--fixture" in sys.argv:
